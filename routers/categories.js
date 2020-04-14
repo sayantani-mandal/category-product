@@ -44,9 +44,9 @@ router.post('/', auth , async (req, res) => {
                         else{
                             res.status(400).send({Error:'Duplicate cat name found in db'});
                         }
-                    } catch (err) {
-                        console.log(err);
-                        return res.status(500).send({err: 'Internal server error'});
+                    } catch (Error) {
+                        console.log(Error);
+                        return res.status(500).send({Error: 'Internal server error'});
                     }
                 }
                 else if(isErr){
@@ -71,6 +71,7 @@ router.post('/', auth , async (req, res) => {
 
 
 router.get('/', auth , async (req,res)=>{
+    try{
   const result = await Category.find().populate({
                     path: 'products',
                     options: {
@@ -79,6 +80,10 @@ router.get('/', auth , async (req,res)=>{
                     perDocumentLimit: 2
                 });
   res.send(result);
+            }
+            catch (e) {
+                res.status(400).send(e)
+            }
 
 });
 

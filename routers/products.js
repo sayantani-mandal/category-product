@@ -64,10 +64,15 @@ router.post('/', async (req,res)=>{
 });
 
 router.post('/search', async (req,res) => {
+    try{
 const highest = req.body.highest;
 const lowest = req.body.lowest;
 const result = await Product.find({price:{$gte:lowest , $lt: highest}}).sort({price: -1}).populate('categories');
 res.send(result);
+    }
+    catch (e) {
+        res.status(400).send(e)
+    }
 });
 
 

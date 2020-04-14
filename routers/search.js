@@ -2,111 +2,82 @@ const express = require('express');
 const mongoose =require('mongoose');
 const Category = require('../models/category');
 const Product = require('../models/product');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/', async (req,res) => {
-   const catId = req.body.catId;
-   const price_min = req.body.price_min;
-   const price_max = req.body.price_max;
+router.post('/',auth, async (req, res) => {
+    const catId = req.body.catId;
+    const price_max = req.body.price.max;
+    const price_min = req.body.price.min;
+    var condition = {};
+    var initCondition = {};
   
-
-   if(catId){
-
-    const cat = await Category.findById(catId);
-    if(!cat) return res.status(400).send({Error:'Invalid category Id provided....'});
-
-    if(!price_max && !price_min){
-        const result = await Category.findById(catId).populate({path: 'products', options: {sort: {'price': -1}}});
-        res.send(result);
+    try {
+      if (catId) {
+        const cat = await Category.findById(catId);
+        if (!cat)
+          return res .status(400).send({ Error: 'Invalid category Id provided....' });
+        initCondition['_id'] = catId;
+  
+        if (!price_max && !price_min) {
+        } else if (price_max && !price_min) {
+          condition['price'] = { $lte: price_max };
+        } else if (price_min && !price_max) {
+          condition['price'] = { $gte: price_min };
+        } else {
+          if (price_min > price_max)
+            return res.status(400).send({ Error: 'price_min must be less than max' }); 
+          condition['price'] = { $lte: price_max, $gte: price_min };
+        }
+      } else {
+        if (!price_max && !price_min) {
+        } else if (price_max && !price_min) {
+          condition['price'] = { $lte: price_max };
+        } else if (price_min && !price_max) {
+          condition['price'] = { $gte: price_min };
+        } else {
+          if (price_min > price_max)
+            return res.status(400).send({ Error: 'price_min must be less than max' });
+  
+          condition['price'] = { $lte: price_max, $gte: price_min };
+        }
+      }
+      console.log(initCondition);
+      console.log(condition);
+      const result = await Category.find(initCondition).populate({
+        path: 'products',
+        options: {
+          sort: { createdAt: -1 },
+        },
+        match: condition,
+      });
+      res.send(result);
+    } catch (error) {
+      res.status(400).send(error);
     }
-    else if(price_max && !price_min){
-        const result = await Category.findById(catId)
-        .populate({
-            path: 'products', 
-            options: {
-                sort: {price: -1}
-            },
-            match: {price: {$lte: price_max}}
-        });
-        res.send(result);
-    }
-    else if(price_min && !price_max){
-        const result = await Category.findById(catId)
-        .populate({
-            path: 'products', 
-            options: {
-                sort: {price: -1}
-            },
-            match: {price: {$gte: price_min}}
-        });
-        res.send(result);
-    }
-    else {
-        const result = await Category.findById(catId)
-        .populate({
-            path: 'products', 
-            options: {
-                sort: {price: -1}
-            },
-            match: {
-                price: {$lte: price_max, $gte: price_min}
-            }
-        });
-        res.send(result);
-    }
-}
-else {
-    if(!price_max && !price_min){
-        const result = await Category.find().populate({path: 'products', options: {sort: {'price': -1}}});
-        res.send(result);
-    }
-    else if(price_max && !price_min){
-        const result = await Category.find()
-        .populate({
-            path: 'products', 
-            options: {
-                sort: {price: -1}
-            },
-            match: {price: {$lte: price_max}}
-        });
-        res.send(result);
-    }
-    else if(price_min && !price_max){
-        const result = await Category.find()
-        .populate({
-            path: 'products', 
-            options: {
-                sort: {price: -1}
-            },
-            match: {price: {$gte: price_min}}
-        });
-        res.send(result);
-    }
-    else {
-        const result = await Category.find()
-        .populate({
-            path: 'products', 
-            options: {
-                sort: {price: -1}
-            },
-            match: {
-                price: {$lte: price_max, $gte: price_min}
-            }
-        });
-        res.send(result);
-    }
-}
-});
-
+  });
+  
 
 
 router.post('/searchProduct', async (req,res) => {
 
-    const search = req.query.search;
-  
-       const result = await Product.find({name: new RegExp(search, 'i')});
-       res.send(result);
+    try{
+
+    const search = new RegExp(req.query.search);
+    console.log(search);
+    const result = await Product.find({name: search});
+    console.log(result);
+    
+    if(result.length == 0){
+        res.status(400).send({Error: "No data found..."});
+    }else{
+        res.send(result);
+    }
+    }
+    catch (e) {
+        res.status(400).send(e)
+    }
 
                 
     

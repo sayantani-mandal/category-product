@@ -9,6 +9,7 @@ const datetime = require('node-datetime');
 const router = express.Router();
 
 
+
 router.post('/', async (req,res) => {
     try{
         let order = new Order({ ...req.body });
@@ -29,6 +30,7 @@ router.post('/', async (req,res) => {
       res.status(400).send(ex);
        
     }
+
    });
 
 
@@ -52,6 +54,7 @@ router.post('/', async (req,res) => {
 }); */
 
 router.get('/', auth , async (req,res) => {
+    try{
     const today = new Date();
     const result = await Order.find({createdAt:{$gte:(today.getTime() - 1000*60*60*24*4)}})
                                 .populate({
@@ -62,27 +65,46 @@ router.get('/', auth , async (req,res) => {
                                 });
     res.send(result);
     console.log(today.getTime());
+                            }
+                            catch (e) {
+                                res.status(400).send(e)
+                            }
 
 });
 
 
 router.post('/search', auth , async (req,res) => {
+    try{
     //const countLimit = parseInt(req.query.countLimit) ;
     const countLimit = parseInt(req.query.countLimit)
     const page = parseInt(req.query.page);
     const countSkip = countLimit*(page-1);
     const high = await Order.find().count();
+   
     console.log(high);
 
-   if(countSkip > high){
+    if (countSkip < 0) return res.status(400).send({ Error: 'Invalid page request...' });
+
+  else if(countSkip > high){
        res.status(400).send({Error :'page is not available'});
    }
+
    else{ const results = await Order.find().skip(countSkip).limit(countLimit).sort({createdAt : -1});
-    res.send(results);
+
+   const finalResult = {
+    totalDocuments: high,
+    orders: results
+  };
+    res.send(finalResult);
             }
+        }
+        catch (e) {
+            res.status(400).send(e)
+        }
 });
 
 router.get('/:id', async (req, res) => {
+    try{
     const order = await Order.findById(req.params.id)
                                 .populate({
                                     path: 'products',
@@ -107,6 +129,10 @@ router.get('/:id', async (req, res) => {
     }
     sendEmail(order.userEmail,context);
     res.send(order);
+}
+catch (e) {
+    res.status(400).send(e)
+}
 });
 
 

@@ -9,8 +9,8 @@ const token = req.header('token');
 if(token == apiKey){
     next();
 }
-else if(!token) return res.status(401).send('access denied. no apiKey provided');
-else res.status(401).send('wrong apiKey provided');
+else if(!token) return res.status(401).send({Error:'access denied. no apiKey provided'});
+else res.status(401).send({Error:'wrong apiKey provided'});
 
 }
 
